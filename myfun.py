@@ -81,9 +81,6 @@ class func:
                    weather_text[1] + u'\n最高温度是：' + High[1] + u'\n最低温度是：' + Low[1] + u'\n后天的天气是：' + weather_text[
                        2] + u'\n最高温度是：' + High[2] + u'\n最低温度是：' + Low[2]
         else:
-            if re.search('傻', city) or re.search('.*?天王.*?傻.*?', city) or re.search('.*?傻.*?天王.*?', city) or re.search(
-                    '.*?王天宇.*?傻.*?', city) or re.search('.*?傻.*?王天宇.*?', city):
-                return u'天王最聪明!哼~'
             if re.search('王天宇^', city) or re.search('天王^', city) or re.search('^天王', city) or re.search('^王天宇', city):
                 return u'你好呀~'
             if re.search('.*?自动浇.*?', city) or re.search('.*?设备.*?', city):
