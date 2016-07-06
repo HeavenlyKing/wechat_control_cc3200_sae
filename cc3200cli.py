@@ -56,7 +56,7 @@ def weixin():
         nonce = data.get('nonce', '')
         echostr = data.get('echostr', '')
         # 自己的token
-        token = 'HEAVENLYKING'
+        token = ''#add your token
         list = [token, timestamp, nonce]
         list.sort()
         list=''.join(list)
