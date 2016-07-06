@@ -9,7 +9,7 @@
 欢迎修正我写的🌶️🐔代码，想咨询cc3200代码或者整个项目的代码请转：[https://github.com/HeavenlyKing/CC3200\_ASW](https://github.com/HeavenlyKing/CC3200_ASW)
 
 ### **有其他疑问可以通过有偿向我提问，毕竟还在忙于学习**
-
+#### **参加比赛或者商业类用途请注明出处！**
 ### **邮箱：wtyzy@icloud.com**
 
 ### **如果对你的工程工作项目毕设有帮助，可以请我喝杯星巴克吗😀**
