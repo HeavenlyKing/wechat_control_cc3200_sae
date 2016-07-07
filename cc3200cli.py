@@ -1,28 +1,49 @@
 # -*- coding:utf8 -*-
-#encoding=utf-8
-# import MySQLdb
+import MySQLdb
 import hashlib
-import web
 import time
-import os
 from lxml import etree
 import myfun
 import pylibmc
 import re
 from flask import Flask,jsonify as flask_jsonify, request,g,make_response
-# from mysql import get_content
+
+
 app = Flask(__name__)
 app.debug = True
-import mysql
-# from sae.const import (MYSQL_HOST, MYSQL_HOST_S,
-#     MYSQL_PORT, MYSQL_USER, MYSQL_PASS, MYSQL_DB
-# )
+
+
+from sae.const import (MYSQL_HOST, MYSQL_HOST_S,
+    MYSQL_PORT, MYSQL_USER, MYSQL_PASS, MYSQL_DB
+)
 
 def jsonify(*args, **kwargs):
     response = flask_jsonify(*args, **kwargs)
     if not response.data.endswith(b'\n'):
         response.data += b'\n'
     return response
+
+def content():
+    try :
+        g.db.ping()
+    except:
+        g.db = MySQLdb.connect(MYSQL_HOST,MYSQL_USER,MYSQL_PASS,MYSQL_DB,port=MYSQL_PORT)#数据库登陆
+    Content = g.db.cursor()#读取数据库
+    Content.execute("SELECT * FROM asw")#进入asw表
+    Content_Data = Content.fetchall()#读取表中内容
+    # g.db.close()#关闭数据库
+    return Content_Data[-1]
+
+
+@app.before_request
+def before_request():
+    g.db = MySQLdb.connect(MYSQL_HOST, MYSQL_USER, MYSQL_PASS,
+                           MYSQL_DB, port=int(MYSQL_PORT))
+
+@app.teardown_request
+def teardown_request(exception):
+    if hasattr(g, 'db'): g.db.close()
+
 
 @app.route('/')
 def hello():
@@ -31,24 +52,12 @@ def hello():
 
 @app.route('/get',methods=['GET',])#GET
 def get():
-    Content_res =  mysql.get_content()
-    return jsonify(ID=Content_res['ID'],USER_NAME=Content_res['FromUserName'],Content=Content_res['Content'])
-# ############################################################################################################
+    Content_res =  content()
+    return jsonify(ID=Content_res[0],USER_NAME=Content_res[3],Content=Content_res[5])
+
+
 @app.route('/weixin',methods=['GET','POST'])
 def weixin():
-
-    token = 'xxxxxxxxxxx' # your token
-    query = request.args  # GET 方法附上的参数
-    signature = query.get('signature', '')
-    timestamp = query.get('timestamp', '')
-    nonce = query.get('nonce', '')
-    echostr = query.get('echostr', '')
-    s = [timestamp, nonce, token]
-    s.sort()
-    s = ''.join(s)
-    if ( hashlib.sha1(s).hexdigest() == signature ):
-        return make_response(echostr)
-
     if request.method == "GET" :
         data = request.args
         signature = data.get('signature', '')
@@ -79,10 +88,7 @@ def weixin():
         msgId = int(xml.find("MsgId").text)
         mc = pylibmc.Client()
         reply = "<xml><ToUserName><![CDATA[%s]]></ToUserName><FromUserName><![CDATA[%s]]></FromUserName><CreateTime>%s</CreateTime><MsgType><![CDATA[text]]></MsgType><Content><![CDATA[%s]]></Content><FuncFlag>0</FuncFlag></xml>"
-        # response = make_response( reply % (fromUser, toUser, str(int(time.time())), Content ) )
-        # response.content_type = 'application/xml'
-        # # return response
-
+        Mysql = g.db.cursor()
 
     # 欢迎订阅
         if msgType == 'event':
@@ -104,37 +110,37 @@ def weixin():
             if re.search('.*?状况', content):
                 time_now = time.strftime('%Y-%m-%d %H:%M', time.localtime())
                 content = 'state'
-                mysql.add_data(time_now, msgId, fromUser, msgType, content)
+                Mysql.execute("INSERT INTO asw(Create_Time,MsgID,FromUserName,MsgType,Content) values('%s','%d','%s','%s','%s')" %(time_now, msgId, fromUser, msgType, content))
                 response = make_response( reply % (fromUser, toUser, str(int(time.time())),  u"\n目前的状况"))
                 return response
             if re.search('.*?温度', content):
                 time_now = time.strftime('%Y-%m-%d %H:%M', time.localtime())
                 content = 'tem'
-                mysql.add_data(time_now, msgId, fromUser, msgType, content)
+                Mysql.execute("INSERT INTO asw(Create_Time,MsgID,FromUserName,MsgType,Content) values('%s','%d','%s','%s','%s')" %(time_now, msgId, fromUser, msgType, content))
                 response = make_response( reply % (fromUser, toUser, str(int(time.time())),  u"\n目前的温度"))
                 return response
             if re.search('.*?湿度', content):
                 time_now = time.strftime('%Y-%m-%d %H:%M', time.localtime())
                 content = 'hum'
-                mysql.add_data(time_now, msgId, fromUser, msgType, content)
+                Mysql.execute("INSERT INTO asw(Create_Time,MsgID,FromUserName,MsgType,Content) values('%s','%d','%s','%s','%s')" %(time_now, msgId, fromUser, msgType, content))
                 response = make_response( reply % (fromUser, toUser, str(int(time.time())),  u"\n目前的湿度"))
                 return response
             if re.search('.*?浇水', content):
                 time_now = time.strftime('%Y-%m-%d %H:%M', time.localtime())
                 content = 'water'
-                mysql.add_data(time_now, msgId, fromUser, msgType, content)
+                Mysql.execute("INSERT INTO asw(Create_Time,MsgID,FromUserName,MsgType,Content) values('%s','%d','%s','%s','%s')" %(time_now, msgId, fromUser, msgType, content))
                 response = make_response( reply % (fromUser, toUser, str(int(time.time())),  u"\n正在浇水"))
                 return response
             if re.search('.*?开.*?灯', content) or re.search('.*?灯.*?开', content):
                 time_now = time.strftime('%Y-%m-%d %H:%M', time.localtime())
                 content = '1'
-                mysql.add_data(time_now, msgId, fromUser, msgType, content)
+                Mysql.execute("INSERT INTO asw(Create_Time,MsgID,FromUserName,MsgType,Content) values('%s','%d','%s','%s','%s')" %(time_now, msgId, fromUser, msgType, content))
                 response = make_response( reply % (fromUser, toUser, str(int(time.time())),  u"\n灯已经开启"))
                 return response
             if re.search('.*?关.*?灯', content) or re.search('.*?灯.*?关', content):
                 time_now = time.strftime('%Y-%m-%d %H:%M', time.localtime())
                 content = '0'
-                mysql.add_data(time_now, msgId, fromUser, msgType, content)
+                Mysql.execute("INSERT INTO asw(Create_Time,MsgID,FromUserName,MsgType,Content) values('%s','%d','%s','%s','%s')" %(time_now, msgId, fromUser, msgType, content))
                 response = make_response( reply % (fromUser, toUser, str(int(time.time())),  u"\n灯已经关闭"))
                 return response
             if re.search('.*?再见.*?', content):
@@ -167,38 +173,38 @@ def weixin():
             if re.search('.*?状况', content):
                 time_now = time.strftime('%Y-%m-%d %H:%M', time.localtime())
                 content = 'state'
-                mysql.add_data(time_now, msgId, fromUser, msgType, content)
+                Mysql.execute("INSERT INTO asw(Create_Time,MsgID,FromUserName,MsgType,Content) values('%s','%d','%s','%s','%s')" %(time_now, msgId, fromUser, msgType, content))
                 response = make_response( reply % (fromUser, toUser, str(int(time.time())),  u"\n目前的状况"))
                 return response
             if re.search('.*?温度', content):
                 time_now = time.strftime('%Y-%m-%d %H:%M', time.localtime())
                 content = 'tem'
-                mysql.add_data(time_now, msgId, fromUser, msgType, content)
+                Mysql.execute("INSERT INTO asw(Create_Time,MsgID,FromUserName,MsgType,Content) values('%s','%d','%s','%s','%s')" %(time_now, msgId, fromUser, msgType, content))
                 response = make_response( reply % (fromUser, toUser, str(int(time.time())),  u"\n目前的温度"))
                 return response
             if re.search('.*?湿度', content):
                 time_now = time.strftime('%Y-%m-%d %H:%M', time.localtime())
                 content = 'hum'
-                mysql.add_data(time_now, msgId, fromUser, msgType, content)
+                Mysql.execute("INSERT INTO asw(Create_Time,MsgID,FromUserName,MsgType,Content) values('%s','%d','%s','%s','%s')" %(time_now, msgId, fromUser, msgType, content))
                 response = make_response( reply % (fromUser, toUser, str(int(time.time())),  u"\n目前的湿度"))
                 return response
             # Watering.humidity()
             if re.search('.*?浇水', content):
                 time_now = time.strftime('%Y-%m-%d %H:%M', time.localtime())
                 content = 'water'
-                mysql.add_data(time_now, msgId, fromUser, msgType, content)
+                Mysql.execute("INSERT INTO asw(Create_Time,MsgID,FromUserName,MsgType,Content) values('%s','%d','%s','%s','%s')" %(time_now, msgId, fromUser, msgType, content))
                 response = make_response( reply % (fromUser, toUser, str(int(time.time())),  u"\n正在浇水"))
                 return response
             if re.search('.*?开.*?灯', content) or re.search('.*?灯.*?开', content):
                 time_now = time.strftime('%Y-%m-%d %H:%M', time.localtime())
                 content = '1'
-                mysql.add_data(time_now, msgId, fromUser, msgType, content)
+                Mysql.execute("INSERT INTO asw(Create_Time,MsgID,FromUserName,MsgType,Content) values('%s','%d','%s','%s','%s')" %(time_now, msgId, fromUser, msgType, content))
                 response = make_response( reply % (fromUser, toUser, str(int(time.time())),  u"灯已经开启"))
                 return response
             if re.search('.*?关.*?灯', content) or re.search('.*?灯.*?关', content):
                 time_now = time.strftime('%Y-%m-%d %H:%M', time.localtime())
                 content = '0'
-                mysql.add_data(time_now, msgId, fromUser, msgType, content)
+                Mysql.execute("INSERT INTO asw(Create_Time,MsgID,FromUserName,MsgType,Content) values('%s','%d','%s','%s','%s')" %(time_now, msgId, fromUser, msgType, content))
                 response = make_response( reply % (fromUser, toUser, str(int(time.time())),  u"灯已经关闭"))
                 return response
             # Watering.water()
